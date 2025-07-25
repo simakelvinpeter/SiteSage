@@ -44,7 +44,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
       onWebsiteGenerated(website);
       toast({
         title: "Website Generated Successfully!",
-        description: "Your AI-powered website is ready for preview.",
+        description: "Your website is ready for preview.",
       });
     },
     onError: (error: Error) => {
