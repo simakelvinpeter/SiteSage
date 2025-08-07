@@ -35,10 +35,12 @@ Preferred communication style: Simple, everyday language.
 ## Key Components
 
 ### Frontend Components
-1. **WebsiteGenerator**: Form component for capturing user requirements
+1. **WebsiteGenerator**: Form component for capturing user requirements with color picker and image URL inputs
 2. **WebsitePreview**: Preview component with responsive design testing
 3. **UI Components**: Complete shadcn/ui component library for consistent design
 4. **Toast System**: User feedback and notifications
+5. **Color Customization**: Visual color pickers for primary and secondary colors
+6. **Image Management**: Dynamic image URL input system with add/remove functionality
 
 ### Backend Services
 1. **Website Generation API**: `/api/websites/generate` endpoint
@@ -53,13 +55,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Data Flow
 
-1. **User Input**: User fills out website generation form with name, description, and options
+1. **User Input**: User fills out website generation form with name, description, color scheme, image URLs, and options
 2. **Validation**: Form data validated using Zod schemas on both client and server
-3. **AI Generation**: Backend sends structured prompt to OpenAI GPT-4o
-4. **Content Processing**: AI returns HTML, CSS, navigation items, and footer content
-5. **Storage**: Generated website saved to PostgreSQL database
+3. **AI Generation**: Backend sends structured prompt to OpenAI GPT-4o including color and image preferences
+4. **Content Processing**: AI returns HTML, CSS with custom colors, navigation items, and footer content
+5. **Storage**: Generated website saved to PostgreSQL database with color and image metadata
 6. **Response**: Website data returned to frontend for preview
-7. **Download**: Users can download complete HTML files locally
+7. **Download**: Users can download complete HTML files with custom styling locally
 
 ## External Dependencies
 

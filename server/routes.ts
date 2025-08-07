@@ -24,6 +24,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         includeFooter: validatedData.includeFooter,
         includeContactForm: validatedData.includeContactForm,
         isResponsive: validatedData.isResponsive,
+        primaryColor: validatedData.primaryColor,
+        secondaryColor: validatedData.secondaryColor,
+        imageUrls: validatedData.imageUrls,
       });
 
       res.json(website);

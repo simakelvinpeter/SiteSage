@@ -31,6 +31,9 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
       includeFooter: true,
       includeContactForm: false,
       isResponsive: true,
+      primaryColor: "#667eea",
+      secondaryColor: "#764ba2",
+      imageUrls: [],
     },
   });
 
@@ -79,6 +82,32 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
     return value;
   };
 
+  const [imageInputs, setImageInputs] = useState<string[]>(['']);
+
+  const addImageInput = () => {
+    setImageInputs([...imageInputs, '']);
+  };
+
+  const removeImageInput = (index: number) => {
+    const newInputs = imageInputs.filter((_, i) => i !== index);
+    setImageInputs(newInputs.length === 0 ? [''] : newInputs);
+    
+    // Update form with filtered URLs
+    const currentUrls = form.getValues('imageUrls');
+    const newUrls = currentUrls.filter((_, i) => i !== index);
+    form.setValue('imageUrls', newUrls);
+  };
+
+  const updateImageUrl = (index: number, url: string) => {
+    const newInputs = [...imageInputs];
+    newInputs[index] = url;
+    setImageInputs(newInputs);
+    
+    // Update form with valid URLs only
+    const validUrls = newInputs.filter(url => url.trim() !== '');
+    form.setValue('imageUrls', validUrls);
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
       <div className="flex items-center space-x-3 mb-6">
@@ -105,6 +134,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
                   <Input
                     placeholder="e.g., Mountain Adventure Tours, Tech Startup, Coffee Shop..."
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-slate-50 focus:bg-white"
+                    data-testid="input-website-name"
                     {...field}
                   />
                 </FormControl>
@@ -127,6 +157,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
                     rows={5}
                     placeholder="Describe your website's purpose, target audience, key features, and desired style. Be as detailed as possible for better results..."
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-slate-50 focus:bg-white resize-none"
+                    data-testid="input-website-description"
                     {...field}
                     onChange={(e) => {
                       const value = handleDescriptionChange(e.target.value);
@@ -143,6 +174,116 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
             )}
           />
 
+          {/* Color Customization */}
+          <div className="bg-slate-50 rounded-xl p-4 mb-6">
+            <h3 className="font-semibold text-slate-700 mb-4">Color Scheme</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="primaryColor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-slate-600">Primary Color</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="color"
+                          value={field.value}
+                          onChange={field.onChange}
+                          className="w-12 h-10 rounded border border-slate-300 cursor-pointer"
+                          data-testid="input-primary-color"
+                        />
+                        <Input
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="#667eea"
+                          className="flex-1"
+                          data-testid="input-primary-color-text"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="secondaryColor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-slate-600">Secondary Color</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="color"
+                          value={field.value}
+                          onChange={field.onChange}
+                          className="w-12 h-10 rounded border border-slate-300 cursor-pointer"
+                          data-testid="input-secondary-color"
+                        />
+                        <Input
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="#764ba2"
+                          className="flex-1"
+                          data-testid="input-secondary-color-text"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Image URLs */}
+          <div className="bg-slate-50 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-700">Images</h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addImageInput}
+                className="text-primary hover:bg-primary hover:text-white"
+                data-testid="button-add-image"
+              >
+                <i className="fas fa-plus mr-2"></i>
+                Add Image
+              </Button>
+            </div>
+            <div className="space-y-3">
+              {imageInputs.map((url, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <Input
+                    value={url}
+                    onChange={(e) => updateImageUrl(index, e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="flex-1"
+                    data-testid={`input-image-url-${index}`}
+                  />
+                  {imageInputs.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeImageInput(index)}
+                      className="text-red-500 hover:bg-red-50"
+                      data-testid={`button-remove-image-${index}`}
+                    >
+                      <i className="fas fa-trash"></i>
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <p className="text-xs text-slate-500 mt-2">
+                Add image URLs to include in your website. First image will be used as hero background.
+              </p>
+            </div>
+          </div>
+
           <div className="bg-slate-50 rounded-xl p-4">
             <h3 className="font-semibold text-slate-700 mb-2">AI Generation Options</h3>
             <div className="space-y-3">
@@ -156,6 +297,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
                         checked={field.value}
                         onCheckedChange={field.onChange}
                         className="rounded text-primary focus:ring-primary"
+                        data-testid="checkbox-navigation"
                       />
                     </FormControl>
                     <FormLabel className="text-sm text-slate-600 cursor-pointer">
@@ -175,6 +317,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
                         checked={field.value}
                         onCheckedChange={field.onChange}
                         className="rounded text-primary focus:ring-primary"
+                        data-testid="checkbox-footer"
                       />
                     </FormControl>
                     <FormLabel className="text-sm text-slate-600 cursor-pointer">
@@ -194,6 +337,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
                         checked={field.value}
                         onCheckedChange={field.onChange}
                         className="rounded text-primary focus:ring-primary"
+                        data-testid="checkbox-responsive"
                       />
                     </FormControl>
                     <FormLabel className="text-sm text-slate-600 cursor-pointer">
@@ -213,6 +357,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
                         checked={field.value}
                         onCheckedChange={field.onChange}
                         className="rounded text-primary focus:ring-primary"
+                        data-testid="checkbox-contact-form"
                       />
                     </FormControl>
                     <FormLabel className="text-sm text-slate-600 cursor-pointer">
@@ -228,6 +373,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
             type="submit"
             disabled={isGenerating}
             className="w-full bg-gradient-to-r from-primary to-secondary hover:from-indigo-600 hover:to-purple-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:ring-4 focus:ring-primary/25"
+            data-testid="button-generate-website"
           >
             {isGenerating ? (
               <>

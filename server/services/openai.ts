@@ -12,6 +12,9 @@ export interface WebsiteGenerationOptions {
   includeFooter: boolean;
   includeContactForm: boolean;
   isResponsive: boolean;
+  primaryColor: string;
+  secondaryColor: string;
+  imageUrls: string[];
 }
 
 export interface GeneratedWebsite {
@@ -24,6 +27,22 @@ export interface GeneratedWebsite {
 function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsite {
   const navItems = options.includeNavigation ? ['Home', 'About', 'Services', 'Contact'] : [];
   
+  // Generate image gallery if images are provided
+  const imageGallery = options.imageUrls.length > 0 ? `
+    <section class="image-gallery">
+      <div class="container">
+        <h2>Gallery</h2>
+        <div class="gallery-grid">
+          ${options.imageUrls.map((url, index) => `
+            <div class="gallery-item">
+              <img src="${url}" alt="Gallery image ${index + 1}" loading="lazy" />
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </section>
+  ` : '';
+
   const html = `
     <div class="website-container">
       ${options.includeNavigation ? `
@@ -37,9 +56,16 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
       
       <main class="main-content">
         <section class="hero">
-          <h1>${options.name}</h1>
-          <p class="hero-description">${options.description}</p>
-          <button class="cta-button">Get Started</button>
+          ${options.imageUrls.length > 0 ? `
+            <div class="hero-image">
+              <img src="${options.imageUrls[0]}" alt="Hero image" />
+            </div>
+          ` : ''}
+          <div class="hero-content">
+            <h1>${options.name}</h1>
+            <p class="hero-description">${options.description}</p>
+            <button class="cta-button">Get Started</button>
+          </div>
         </section>
         
         <section class="features">
@@ -61,6 +87,8 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
             </div>
           </div>
         </section>
+
+        ${imageGallery}
 
         ${options.includeContactForm ? `
           <section class="contact">
@@ -126,7 +154,7 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
     }
 
     .main-nav {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, ${options.primaryColor} 0%, ${options.secondaryColor} 100%);
       padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
@@ -160,10 +188,33 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
     }
 
     .hero {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, ${options.primaryColor} 0%, ${options.secondaryColor} 100%);
       color: white;
       text-align: center;
       padding: 5rem 2rem;
+      position: relative;
+      ${options.imageUrls.length > 0 ? 'min-height: 80vh; display: flex; align-items: center; justify-content: center;' : ''}
+    }
+
+    .hero-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+    }
+
+    .hero-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.3;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
     }
 
     .hero h1 {
@@ -226,7 +277,42 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
 
     .feature-card h3 {
       margin-bottom: 1rem;
-      color: #667eea;
+      color: ${options.primaryColor};
+    }
+
+    .image-gallery {
+      padding: 5rem 2rem;
+      background: #f8f9fa;
+    }
+
+    .image-gallery h2 {
+      text-align: center;
+      margin-bottom: 3rem;
+      font-size: 2.5rem;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .gallery-item {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.05);
     }
 
     .contact {
@@ -261,7 +347,7 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
     }
 
     .contact-form button {
-      background: #667eea;
+      background: ${options.primaryColor};
       color: white;
       border: none;
       padding: 1rem;
@@ -272,7 +358,7 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
     }
 
     .contact-form button:hover {
-      background: #5a6fd8;
+      background: ${options.secondaryColor};
     }
 
     .main-footer {
@@ -357,20 +443,38 @@ Include Navigation: ${options.includeNavigation}
 Include Footer: ${options.includeFooter}
 Include Contact Form: ${options.includeContactForm}
 Responsive Design: ${options.isResponsive}
+Primary Color: ${options.primaryColor}
+Secondary Color: ${options.secondaryColor}
+${options.imageUrls.length > 0 ? `Images to Include: ${options.imageUrls.join(', ')}` : 'No images provided'}
 
 Generate a complete website with:
 1. Semantic HTML structure
-2. Modern CSS styling with responsive design
+2. Modern CSS styling with responsive design using the specified color scheme
 3. Navigation menu with relevant sections
 4. Footer with contact information and links
 5. Hero section and content sections
-6. Professional color scheme and typography
+6. Use the provided primary color (${options.primaryColor}) and secondary color (${options.secondaryColor}) throughout the design
 7. ${options.includeContactForm ? 'A contact form' : 'No contact form needed'}
+${options.imageUrls.length > 0 ? `8. Include the provided images in an attractive layout - use the first image as a hero background if appropriate` : ''}
+
+Color Usage Guidelines:
+- Use ${options.primaryColor} for primary elements like buttons, navigation, headings
+- Use ${options.secondaryColor} for accents, hover states, and secondary elements
+- Create gradients between these colors where appropriate
+- Ensure good contrast for readability
+
+${options.imageUrls.length > 0 ? `
+Image Integration:
+- First image: Use as hero background or prominent feature
+- Additional images: Create an image gallery or integrate throughout content
+- All images should use the provided URLs: ${options.imageUrls.join(', ')}
+- Add proper alt tags and responsive sizing
+` : ''}
 
 Return the response as JSON with this exact structure:
 {
   "html": "complete HTML document",
-  "css": "complete CSS styles",
+  "css": "complete CSS styles with the specified color scheme",
   "navigationItems": ["array", "of", "navigation", "menu", "items"],
   "footerContent": "footer content description"
 }

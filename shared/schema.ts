@@ -21,6 +21,9 @@ export const websites = pgTable("websites", {
   includeFooter: boolean("include_footer").default(true),
   includeContactForm: boolean("include_contact_form").default(false),
   isResponsive: boolean("is_responsive").default(true),
+  primaryColor: text("primary_color").default("#667eea"),
+  secondaryColor: text("secondary_color").default("#764ba2"),
+  imageUrls: text("image_urls").array(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -45,6 +48,9 @@ export const websiteGenerationSchema = z.object({
   includeFooter: z.boolean().default(true),
   includeContactForm: z.boolean().default(false),
   isResponsive: z.boolean().default(true),
+  primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color").default("#667eea"),
+  secondaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color").default("#764ba2"),
+  imageUrls: z.array(z.string().url("Must be a valid URL")).default([]),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
