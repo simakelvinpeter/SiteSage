@@ -10,6 +10,7 @@ interface WebsitePreviewProps {
 
 export default function WebsitePreview({ website, isGenerating }: WebsitePreviewProps) {
   const [viewMode, setViewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [previewMode, setPreviewMode] = useState<'iframe' | 'direct'>('iframe');
   const { toast } = useToast();
 
   const handleDownload = () => {
@@ -104,6 +105,25 @@ ${website.generatedHtml}
         </div>
         <div className="flex items-center space-x-2">
           <Button
+            variant={previewMode === 'iframe' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setPreviewMode('iframe')}
+            className="p-2 mr-2"
+            title="Iframe Preview"
+          >
+            <i className="fas fa-window-maximize"></i>
+          </Button>
+          <Button
+            variant={previewMode === 'direct' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setPreviewMode('direct')}
+            className="p-2 mr-4"
+            title="Direct Preview"
+          >
+            <i className="fas fa-code"></i>
+          </Button>
+          
+          <Button
             variant={viewMode === 'mobile' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setViewMode('mobile')}
@@ -172,27 +192,35 @@ ${website.generatedHtml}
 
         {website && !isGenerating && (
           <div className="h-full overflow-auto mx-auto" style={getPreviewStyle()}>
-            <iframe
-              srcDoc={`
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>${website.name}</title>
-                    <style>
-                      body { margin: 0; }
-                      ${website.generatedCss}
-                    </style>
-                </head>
-                <body>
-                    ${website.generatedHtml}
-                </body>
-                </html>
-              `}
-              className="w-full h-full border-0"
-              title="Website Preview"
-            />
+            {previewMode === 'iframe' ? (
+              <iframe
+                srcDoc={`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${website.name || 'Generated Website'}</title>
+    <style>
+      body { margin: 0; padding: 0; }
+      ${website.generatedCss || ''}
+    </style>
+</head>
+<body>
+    ${website.generatedHtml || '<div style="padding: 20px; text-align: center; color: #666;">No content available</div>'}
+</body>
+</html>`}
+                className="w-full h-full border-0"
+                title="Website Preview"
+                sandbox="allow-same-origin"
+                onError={() => console.log('Iframe error')}
+                onLoad={() => console.log('Iframe loaded')}
+              />
+            ) : (
+              <div className="w-full h-full overflow-auto bg-white">
+                <style dangerouslySetInnerHTML={{ __html: website.generatedCss }} />
+                <div dangerouslySetInnerHTML={{ __html: website.generatedHtml }} />
+              </div>
+            )}
           </div>
         )}
       </div>
