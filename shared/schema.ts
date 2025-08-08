@@ -51,6 +51,15 @@ export const websiteGenerationSchema = z.object({
   primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color").default("#667eea"),
   secondaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color").default("#764ba2"),
   imageUrls: z.array(z.string().url("Must be a valid URL")).default([]),
+  styleTemplate: z.enum(["modern", "classic", "minimal", "corporate", "creative"]).default("modern"),
+});
+
+export const stylePreviewSchema = z.object({
+  template: z.enum(["modern", "classic", "minimal", "corporate", "creative"]),
+  primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color"),
+  secondaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color"),
+  fontFamily: z.enum(["inter", "roboto", "opensans", "lato", "poppins"]).default("inter"),
+  layout: z.enum(["centered", "fullwidth", "boxed"]).default("centered"),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -58,3 +67,4 @@ export type User = typeof users.$inferSelect;
 export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
 export type Website = typeof websites.$inferSelect;
 export type WebsiteGenerationRequest = z.infer<typeof websiteGenerationSchema>;
+export type StylePreview = z.infer<typeof stylePreviewSchema>;
