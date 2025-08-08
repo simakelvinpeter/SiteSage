@@ -71,6 +71,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve website preview as HTML
+  app.get("/preview/:id", async (req, res) => {
+    try {
+      const website = await storage.getWebsite(req.params.id);
+      if (!website) {
+        return res.status(404).send(`
+          <html><body style="font-family: Arial; padding: 40px; text-align: center;">
+            <h2>Website Not Found</h2>
+            <p>The requested website preview could not be found.</p>
+          </body></html>
+        `);
+      }
+      
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${website.name || 'Generated Website'}</title>
+    <style>
+      body { margin: 0; padding: 0; }
+      ${website.generatedCss || ''}
+    </style>
+</head>
+<body>
+    ${website.generatedHtml || '<div style="padding: 20px; text-align: center; color: #666;">No content available</div>'}
+</body>
+</html>`;
+      
+      res.setHeader('Content-Type', 'text/html');
+      res.send(htmlContent);
+    } catch (error) {
+      console.error("Error serving website preview:", error);
+      res.status(500).send(`
+        <html><body style="font-family: Arial; padding: 40px; text-align: center;">
+          <h2>Preview Error</h2>
+          <p>Unable to load the website preview.</p>
+        </body></html>
+      `);
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
