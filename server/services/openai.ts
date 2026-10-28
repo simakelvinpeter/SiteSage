@@ -29,7 +29,6 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
   options = { ...options, name: escape(options.name), description: escape(options.description), imageUrls: options.imageUrls.map(escape) };
   const navItems = options.includeNavigation ? ['Home', 'About', 'Services', 'Contact'] : [];
   
-  // Generate image gallery if images are provided
   const imageGallery = options.imageUrls.length > 0 ? `
     <section class="image-gallery">
       <div class="container">

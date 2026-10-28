@@ -48,7 +48,6 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
     },
   });
 
-  // Update form when style changes
   useEffect(() => {
     form.setValue("primaryColor", currentStyle.primaryColor);
     form.setValue("secondaryColor", currentStyle.secondaryColor);

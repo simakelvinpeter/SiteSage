@@ -9,7 +9,6 @@ import { visitorSession } from "./session";
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(["/api", "/preview"], visitorSession());
   const attempts = new Map<string, { count: number; reset: number }>();
-  // Generate website endpoint
   app.post("/api/websites/generate", async (req, res) => {
     try {
       const origin = req.get("origin");
@@ -64,7 +63,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get website by ID
   app.get("/api/websites/:id", async (req, res) => {
     try {
       const website = await storage.getWebsite(req.params.id, res.locals.owner);
@@ -78,7 +76,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get recent websites
   app.get("/api/websites", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
@@ -90,7 +87,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve website preview as HTML
   app.get("/preview/:id", async (req, res) => {
     try {
       const website = await storage.getWebsite(req.params.id, res.locals.owner);
