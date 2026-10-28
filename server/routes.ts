@@ -4,16 +4,35 @@ import { storage } from "./storage";
 import { websiteGenerationSchema } from "@shared/schema";
 import { generateWebsite } from "./services/openai";
 import { z } from "zod";
+import { visitorSession } from "./session";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.use(["/api", "/preview"], visitorSession());
+  const attempts = new Map<string, { count: number; reset: number }>();
   // Generate website endpoint
   app.post("/api/websites/generate", async (req, res) => {
     try {
+      const origin = req.get("origin");
+      if (origin && new URL(origin).host !== req.get("host")) {
+        return res.status(403).json({ message: "Use this application's own form" });
+      }
+      const key = req.ip || "local";
+      const time = Date.now();
+      for (const [ip, attempt] of attempts) {
+        if (attempt.reset < time) attempts.delete(ip);
+      }
+      const attempt = attempts.get(key) || { count: 0, reset: time + 3600000 };
+      if (attempt.count >= 10) {
+        return res.status(429).json({ message: "Generation limit reached. Try again in an hour." });
+      }
       const validatedData = websiteGenerationSchema.parse(req.body);
+      attempt.count++;
+      attempts.set(key, attempt);
       
       const generatedContent = await generateWebsite(validatedData);
       
       const website = await storage.createWebsite({
+        generationMode: generatedContent.mode,
         name: validatedData.name,
         description: validatedData.description,
         generatedHtml: generatedContent.html,
@@ -27,19 +46,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         primaryColor: validatedData.primaryColor,
         secondaryColor: validatedData.secondaryColor,
         imageUrls: validatedData.imageUrls,
-      });
+      }, res.locals.owner);
 
       res.json(website);
     } catch (error) {
-      console.error("Error generating website:", error);
+      if (!(error instanceof z.ZodError)) console.error("Website generation failed");
       if (error instanceof z.ZodError) {
         res.status(400).json({ 
           message: "Validation error", 
-          errors: error.errors 
+          errors: error.issues 
         });
       } else {
         res.status(500).json({ 
-          message: error instanceof Error ? error.message : "Failed to generate website" 
+          message: "Failed to generate website. Please try again."
         });
       }
     }
@@ -48,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get website by ID
   app.get("/api/websites/:id", async (req, res) => {
     try {
-      const website = await storage.getWebsite(req.params.id);
+      const website = await storage.getWebsite(req.params.id, res.locals.owner);
       if (!website) {
         return res.status(404).json({ message: "Website not found" });
       }
@@ -63,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/websites", async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
-      const websites = await storage.getUserWebsites(limit);
+      const websites = await storage.getUserWebsites(limit, res.locals.owner);
       res.json(websites);
     } catch (error) {
       console.error("Error fetching websites:", error);
@@ -74,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve website preview as HTML
   app.get("/preview/:id", async (req, res) => {
     try {
-      const website = await storage.getWebsite(req.params.id);
+      const website = await storage.getWebsite(req.params.id, res.locals.owner);
       if (!website) {
         return res.status(404).send(`
           <html><body style="font-family: Arial; padding: 40px; text-align: center;">
@@ -89,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${website.name || 'Generated Website'}</title>
+    <title>Generated website preview</title>
     <style>
       body { margin: 0; padding: 0; }
       ${website.generatedCss || ''}
@@ -101,6 +120,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 </html>`;
       
       res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'; style-src 'unsafe-inline' https:; img-src https: data:; font-src https: data:; base-uri 'none'; form-action 'none'");
+      res.setHeader('X-Content-Type-Options', 'nosniff');
       res.send(htmlContent);
     } catch (error) {
       console.error("Error serving website preview:", error);

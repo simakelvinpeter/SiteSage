@@ -33,7 +33,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
   const { toast } = useToast();
 
   const form = useForm<WebsiteGenerationRequest>({
-    resolver: zodResolver(websiteGenerationSchema),
+    resolver: zodResolver(websiteGenerationSchema.required()),
     defaultValues: {
       name: "",
       description: "",
@@ -71,7 +71,7 @@ export default function WebsiteGenerator({ onWebsiteGenerated, isGenerating, set
       onWebsiteGenerated(data);
       toast({
         title: "Website Generated!",
-        description: "Your website has been created successfully.",
+          description: data.generationMode === "template" ? "Created using the built-in template. AI is unavailable or unconfigured." : "Your website has been created successfully.",
       });
     },
     onError: (error: any) => {

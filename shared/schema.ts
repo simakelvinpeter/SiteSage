@@ -1,56 +1,15 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
-export const websites = pgTable("websites", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  generatedHtml: text("generated_html").notNull(),
-  generatedCss: text("generated_css").notNull(),
-  navigationItems: text("navigation_items").array(),
-  footerContent: text("footer_content"),
-  includeNavigation: boolean("include_navigation").default(true),
-  includeFooter: boolean("include_footer").default(true),
-  includeContactForm: boolean("include_contact_form").default(false),
-  isResponsive: boolean("is_responsive").default(true),
-  primaryColor: text("primary_color").default("#667eea"),
-  secondaryColor: text("secondary_color").default("#764ba2"),
-  imageUrls: text("image_urls").array(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export const insertWebsiteSchema = createInsertSchema(websites).omit({
-  id: true,
-  createdAt: true,
-  generatedHtml: true,
-  generatedCss: true,
-  navigationItems: true,
-  footerContent: true,
-});
-
 export const websiteGenerationSchema = z.object({
-  name: z.string().min(1, "Website name is required"),
-  description: z.string().min(50, "Description must be at least 50 characters"),
+  name: z.string().trim().min(1, "Website name is required").max(100),
+  description: z.string().trim().min(50, "Description must be at least 50 characters").max(5000),
   includeNavigation: z.boolean().default(true),
   includeFooter: z.boolean().default(true),
   includeContactForm: z.boolean().default(false),
   isResponsive: z.boolean().default(true),
   primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color").default("#667eea"),
   secondaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Must be a valid hex color").default("#764ba2"),
-  imageUrls: z.array(z.string().url("Must be a valid URL")).default([]),
+  imageUrls: z.array(z.string().url("Must be a valid URL").max(2000).refine((url) => url.startsWith("https://"), "Use HTTPS image URLs")).max(10).default([]),
   styleTemplate: z.enum(["modern", "classic", "minimal", "corporate", "creative"]).default("modern"),
 });
 
@@ -62,9 +21,24 @@ export const stylePreviewSchema = z.object({
   layout: z.enum(["centered", "fullwidth", "boxed"]).default("centered"),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type InsertWebsite = z.infer<typeof insertWebsiteSchema>;
-export type Website = typeof websites.$inferSelect;
+export interface Website {
+  id: string;
+  name: string;
+  description: string;
+  generatedHtml: string;
+  generatedCss: string;
+  navigationItems: string[] | null;
+  footerContent: string | null;
+  includeNavigation: boolean | null;
+  includeFooter: boolean | null;
+  includeContactForm: boolean | null;
+  isResponsive: boolean | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  imageUrls: string[] | null;
+  createdAt: Date | null;
+  generationMode?: "ai" | "template";
+}
+
 export type WebsiteGenerationRequest = z.infer<typeof websiteGenerationSchema>;
 export type StylePreview = z.infer<typeof stylePreviewSchema>;

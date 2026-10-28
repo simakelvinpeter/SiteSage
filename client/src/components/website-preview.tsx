@@ -21,7 +21,7 @@ export default function WebsitePreview({ website, isGenerating }: WebsitePreview
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${website.name}</title>
+    <title>${website.name.replace(/[<>&"]/g, "")}</title>
     <style>
 ${website.generatedCss}
     </style>
@@ -35,7 +35,7 @@ ${website.generatedHtml}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${website.name.toLowerCase().replace(/\s+/g, '-')}.html`;
+    a.download = `${website.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -52,30 +52,18 @@ ${website.generatedHtml}
 
     const codeWindow = window.open('', '_blank');
     if (codeWindow) {
-      codeWindow.document.write(`
-        <html>
-          <head>
-            <title>Generated Code - ${website.name}</title>
-            <style>
-              body { font-family: monospace; margin: 20px; background: #f5f5f5; }
-              .section { background: white; margin: 20px 0; padding: 20px; border-radius: 8px; }
-              h2 { color: #333; border-bottom: 2px solid #007acc; padding-bottom: 10px; }
-              pre { background: #f8f8f8; padding: 15px; border-radius: 4px; overflow-x: auto; }
-            </style>
-          </head>
-          <body>
-            <h1>Generated Code for: ${website.name}</h1>
-            <div class="section">
-              <h2>HTML</h2>
-              <pre>${website.generatedHtml.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
-            </div>
-            <div class="section">
-              <h2>CSS</h2>
-              <pre>${website.generatedCss}</pre>
-            </div>
-          </body>
-        </html>
-      `);
+      codeWindow.opener = null;
+      codeWindow.document.title = `Generated Code - ${website.name}`;
+      const heading = codeWindow.document.createElement("h1");
+      heading.textContent = `Generated code for ${website.name}`;
+      codeWindow.document.body.append(heading);
+      for (const [label, source] of [["HTML", website.generatedHtml], ["CSS", website.generatedCss]]) {
+        const title = codeWindow.document.createElement("h2");
+        title.textContent = label;
+        const code = codeWindow.document.createElement("pre");
+        code.textContent = source;
+        codeWindow.document.body.append(title, code);
+      }
     }
   };
 
@@ -176,7 +164,7 @@ ${website.generatedHtml}
               src={`/preview/${website.id}`}
               className="w-full h-full border-0"
               title="Website Preview"
-              sandbox="allow-same-origin allow-scripts"
+              sandbox=""
               onError={() => console.log('Preview iframe error')}
               onLoad={() => console.log('Preview iframe loaded')}
             />

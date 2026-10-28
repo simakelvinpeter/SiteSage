@@ -1,62 +1,45 @@
-import { type User, type InsertUser, type Website, type InsertWebsite } from "@shared/schema";
-import { randomUUID } from "crypto";
+import type { Website } from "@shared/schema";
+import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
-export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
-  getWebsite(id: string): Promise<Website | undefined>;
-  createWebsite(website: Omit<Website, 'id' | 'createdAt'>): Promise<Website>;
-  getUserWebsites(limit?: number): Promise<Website[]>;
-}
+type SavedWebsite = { owner: string; website: Website };
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private websites: Map<string, Website>;
+export class FileStorage {
+  private records: SavedWebsite[] = [];
 
-  constructor() {
-    this.users = new Map();
-    this.websites = new Map();
+  constructor(private file = process.env.DATA_FILE || "instance/websites.json") {
+    this.file = resolve(file);
+    if (existsSync(this.file)) {
+      const saved = JSON.parse(readFileSync(this.file, "utf8"));
+      if (!Array.isArray(saved)) throw new Error("Invalid website storage file");
+      this.records = saved.map((record) => ({
+        ...record,
+        website: { ...record.website, createdAt: new Date(record.website.createdAt) },
+      }));
+    }
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getWebsite(id: string, owner: string): Promise<Website | undefined> {
+    return this.records.find((record) => record.owner === owner && record.website.id === id)?.website;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
-  }
-
-  async getWebsite(id: string): Promise<Website | undefined> {
-    return this.websites.get(id);
-  }
-
-  async createWebsite(websiteData: Omit<Website, 'id' | 'createdAt'>): Promise<Website> {
-    const id = randomUUID();
-    const website: Website = { 
-      ...websiteData, 
-      id, 
-      createdAt: new Date()
-    };
-    this.websites.set(id, website);
+  async createWebsite(data: Omit<Website, "id" | "createdAt">, owner: string): Promise<Website> {
+    const website = { ...data, id: randomUUID(), createdAt: new Date() };
+    const next = [...this.records, { owner, website }];
+    mkdirSync(dirname(this.file), { recursive: true });
+    writeFileSync(`${this.file}.tmp`, JSON.stringify(next), { mode: 0o600 });
+    renameSync(`${this.file}.tmp`, this.file);
+    this.records = next;
     return website;
   }
 
-  async getUserWebsites(limit: number = 10): Promise<Website[]> {
-    return Array.from(this.websites.values())
+  async getUserWebsites(limit = 10, owner: string): Promise<Website[]> {
+    return this.records.filter((record) => record.owner === owner)
+      .map((record) => record.website)
       .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
-      .slice(0, limit);
+      .slice(0, Math.max(1, Math.min(limit, 50)));
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new FileStorage();

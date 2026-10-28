@@ -1,11 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import WebsiteGenerator from "@/components/website-generator";
 import WebsitePreview from "@/components/website-preview";
 import { Website } from "@shared/schema";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function Home() {
   const [generatedWebsite, setGeneratedWebsite] = useState<Website | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  useEffect(() => {
+    const id = localStorage.getItem("sitesage-last-website");
+    if (id) fetch(`/api/websites/${encodeURIComponent(id)}`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((website) => { if (website) setGeneratedWebsite(website); })
+      .catch(() => {});
+  }, []);
+
+  const saveWebsite = (website: Website) => {
+    setGeneratedWebsite(website);
+    localStorage.setItem("sitesage-last-website", website.id);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -22,19 +36,19 @@ export default function Home() {
             
             <div className="hidden md:flex items-center space-x-8">
               <a href="#" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Home</a>
-              <a href="#" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Features</a>
-              <a href="#" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Pricing</a>
-              <a href="#" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Help</a>
+              <a href="#features" className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Features</a>
+              <button onClick={() => setHelpOpen(true)} className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Usage</button>
+              <button onClick={() => setHelpOpen(true)} className="text-slate-600 hover:text-slate-900 font-medium transition-colors">Help</button>
             </div>
 
             <div className="flex items-center space-x-4">
-              <button className="text-slate-600 hover:text-slate-900 font-medium transition-colors hidden sm:inline-block">
-                Sign In
+              <button onClick={() => setHelpOpen(true)} className="text-slate-600 hover:text-slate-900 font-medium transition-colors hidden sm:inline-block">
+                Your workspace
               </button>
-              <button className="bg-primary hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+              <button onClick={() => document.getElementById("generator")?.scrollIntoView({ behavior: "smooth" })} className="bg-primary hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                 Get Started
               </button>
-              <button className="md:hidden text-slate-600 hover:text-slate-900">
+              <button aria-label="Help" onClick={() => setHelpOpen(true)} className="md:hidden text-slate-600 hover:text-slate-900">
                 <i className="fas fa-bars"></i>
               </button>
             </div>
@@ -54,9 +68,9 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
+        <div id="generator" className="grid lg:grid-cols-2 gap-8 items-start">
           <WebsiteGenerator 
-            onWebsiteGenerated={setGeneratedWebsite}
+            onWebsiteGenerated={saveWebsite}
             isGenerating={isGenerating}
             setIsGenerating={setIsGenerating}
           />
@@ -67,7 +81,7 @@ export default function Home() {
         </div>
 
         {/* Features Section */}
-        <div className="mt-16 bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+        <div id="features" className="mt-16 bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-4">Powered by Advanced AI Technology</h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto">
@@ -175,6 +189,18 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Your website workspace</DialogTitle>
+            <DialogDescription>
+              Describe a site, choose its style, then generate a preview. Your last site returns when you refresh. Download it to keep your own copy.
+            </DialogDescription>
+          </DialogHeader>
+          <p>Template generation works without an AI account. AI generation uses the server owner's API credits when configured. This app has no subscription checkout.</p>
+          <p>Generated pages are starter designs. Connect contact forms and review the code before publishing. Keep this browser's cookies to retain access to saved work.</p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

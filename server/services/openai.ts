@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ 
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
 });
@@ -18,6 +17,7 @@ export interface WebsiteGenerationOptions {
 }
 
 export interface GeneratedWebsite {
+  mode?: "ai" | "template";
   html: string;
   css: string;
   navigationItems: string[];
@@ -25,6 +25,8 @@ export interface GeneratedWebsite {
 }
 
 function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsite {
+  const escape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  options = { ...options, name: escape(options.name), description: escape(options.description), imageUrls: options.imageUrls.map(escape) };
   const navItems = options.includeNavigation ? ['Home', 'About', 'Services', 'Contact'] : [];
   
   // Generate image gallery if images are provided
@@ -429,11 +431,15 @@ function generateDemoWebsite(options: WebsiteGenerationOptions): GeneratedWebsit
     html,
     css,
     navigationItems: navItems,
-    footerContent: `Professional footer with contact information and links for ${options.name}`
+    footerContent: `Professional footer with contact information and links for ${options.name}`,
+    mode: "template",
   };
 }
 
 export async function generateWebsite(options: WebsiteGenerationOptions): Promise<GeneratedWebsite> {
+  if (!process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY_ENV_VAR) {
+    return generateDemoWebsite(options);
+  }
   const prompt = `
 You are an expert web developer and designer. Generate a complete, professional website based on the following requirements:
 
@@ -506,24 +512,15 @@ Make the design modern, professional, and visually appealing. Use contemporary w
     }
 
     return {
+      mode: "ai",
       html: result.html,
       css: result.css,
       navigationItems: Array.isArray(result.navigationItems) ? result.navigationItems : [],
       footerContent: result.footerContent,
     };
   } catch (error) {
-    console.error("Error generating website with AI, falling back to demo mode:", error);
+    console.error("AI generation unavailable; using the template fallback.");
     
-    // Check if it's a quota/billing error
-    if (error instanceof Error && (
-      error.message.includes('quota') || 
-      error.message.includes('insufficient_quota') ||
-      error.message.includes('429')
-    )) {
-      console.log("Using demo mode due to API quota limitations");
-      return generateDemoWebsite(options);
-    }
-    
-    throw new Error("Failed to generate website: " + (error as Error).message);
+    return generateDemoWebsite(options);
   }
 }
